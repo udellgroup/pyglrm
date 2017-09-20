@@ -7,7 +7,7 @@ GLRMs model a data array by a low rank matrix, and include many well known model
 For more information on GLRMs, see [our paper][glrmpaper].
 
 ## Requirements
-- OS: Any linux
+- OS: Any linux or MacOS
 - Python (2.7 or 3.x)
 - Working installation of git
 
