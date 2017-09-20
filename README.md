@@ -89,7 +89,7 @@ For example, the following code performs PCA with `k=2` on the `3`x`4` matrix `A
     import numpy as np
     from pyglrm import *
     A = np.array([[1, 2, 3, 4], [2, 4, 6, 8], [4, 5, 6, 7]])
-    k = 2
+    k = 2 #number of target dimensions
     losses = QuadLoss()
     rx = ZeroReg()
     ry = ZeroReg()
