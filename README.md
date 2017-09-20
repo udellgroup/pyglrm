@@ -96,6 +96,8 @@ For example, the following code performs PCA with `k=2` on the `3`x`4` matrix `A
     g = glrm() #create a class for GLRM (Here it does PCA) 
     X, Y, ch = g.fit_transform(A, k) 
     A_pca = np.dot(np.transpose(X), Y) #result for PCA
+    a_new = np.array([6, 7, 8, 9]) #A new line to be tested
+    x = g.predict(a_new) #the latent representation of a_new
     
 
 which runs an alternating directions proximal gradient method on `g` to find the
