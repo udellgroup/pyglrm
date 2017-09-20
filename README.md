@@ -93,7 +93,7 @@ For example, the following code performs PCA with `k=2` on the `3`x`4` matrix `A
     losses = QuadLoss()
     rx = ZeroReg()
     ry = ZeroReg()
-    g = glrm() #create a class for PCA 
+    g = glrm() #create a class for GLRM (Here it does PCA) 
     X, Y, ch = g.fit_transform(A, k) 
     A_pca = np.dot(np.transpose(X), Y) #result for PCA
     
