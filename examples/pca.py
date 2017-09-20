@@ -8,6 +8,6 @@ rx = ZeroReg()
 ry = ZeroReg()
 g = pca() #create a class for PCA
 X, Y, ch = g.fit_transform(A, k)
-A_pca = np.dot(np.transpose(X), Y) #result for PCA
+A_lowdim = np.dot(np.transpose(X), Y) #result for dimensionality reduction
 a_new = np.array([6, 7, 8, 9]) #initialize a new row to be tested
 x = g.predict(a_new) #get the latent representation of a_new
