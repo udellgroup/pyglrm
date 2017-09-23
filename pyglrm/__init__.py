@@ -4,6 +4,8 @@ import numpy as np
 j = julia.Julia()
 j.using("LowRankModels")
 
+__all__ = ['QuadLoss','L1Loss','HuberLoss','ZeroReg','NonNegOneReg','QuadReg','NonNegConstraint','glrm', 'pca', 'nnmf', 'rpca']
+
 #Losses
 def QuadLoss(scale=1.0, domain=j.RealDomain()):
     if not isinstance(scale, float):
@@ -35,9 +37,11 @@ def NonNegConstraint():
     return j.NonNegConstraint()
 
 
+
 class glrm:
     
     is_dimensionality_reduction = True
+    is_feature_selection = False
     
     #class constructor: default being PCA
     def __init__(self, losses = QuadLoss(), rx = ZeroReg(), ry = ZeroReg()):
@@ -48,17 +52,26 @@ class glrm:
         self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry}
 
 
-    def dimension_reduce(self, A, k):
+    #fit the dimensionality reduction method to the input and then output results
+    def fit_transform(self, A, k):
             
             glrm_j = j.GLRM(A, self.losses, self.rx, self.ry, k)
             X, Y, ch = j.fit_b(glrm_j)
             self.Y = Y
             self.k = k
             
-            return np.dot(np.transpose(X), Y)
+            return X, Y, ch
     
     
-    def output_map(self, v): #calculate the output map; requires the input to be an numpy array
+    #fit the dimensionality reduction method to the input, without outputting results
+    def fit(self, A, k):
+            glrm_j = j.GLRM(A, self.losses, self.rx, self.ry, k)
+            X, Y, ch = j.fit_b(glrm_j)
+            self.Y = Y
+            self.k = k
+    
+    
+    def predict(self, v): #calculate the output map; requires the input to be an numpy array
         
         v = v.reshape(1, -1)
         
