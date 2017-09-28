@@ -3,7 +3,7 @@
 from os import environ, mkdir, remove
 from os.path import exists, expanduser, join
 from platform import machine as machine_architecture
-from subprocess import checkcall
+from subprocess import check_call
 from sys import version_info
 import tarfile
 
