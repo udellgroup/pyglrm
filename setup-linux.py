@@ -3,6 +3,7 @@
 from os import environ, mkdir, remove
 from os.path import exists, expanduser, join
 from platform import machine as machine_architecture
+from subprocess import checkcall
 from sys import version_info
 import tarfile
 
@@ -42,8 +43,9 @@ try:
 finally:
   remove(filename)
 
-target = join(foldername, 'julia-903644385b/bin')
-if target not in environ["PATH"]:
+target = join(foldername, 'julia-903644385b/bin/julia')
+check_call(['ln', '-s', target, '/usr/local/bin/julia'])
+'''if target not in environ["PATH"]:
   if exists(expanduser('~/.bashrc')):
     with open(expanduser('~/.bashrc'), 'a') as fout:
       fout.write('export PATH=$PATH:' + target + ' # Added by Pyglrm \n')
@@ -52,4 +54,4 @@ if target not in environ["PATH"]:
       fout.write('export PATH=$PATH:' + target + ' # Added by Pyglrm \n')
   elif exists(expanduser('~/.profile')):
     with open(expanduser('~/.profile'), 'a') as fout:
-      fout.write('export PATH=$PATH:' + target + ' # Added by Pyglrm \n')
+      fout.write('export PATH=$PATH:' + target + ' # Added by Pyglrm \n')'''

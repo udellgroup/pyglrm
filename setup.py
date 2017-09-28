@@ -43,8 +43,8 @@ def installjulia():
   else:
     raise RunTimeError(msg_install_failed)
   
-  environ["PATH"] = ''.join([environ["PATH"], ':', environ["HOME"],
-         '/.julia/julia-903644385b/bin'])
+  #environ["PATH"] = ''.join([environ["PATH"], ':', environ["HOME"],
+  #       '/.julia/julia-903644385b/bin'])
   print(msg_postinstall)
 
 
