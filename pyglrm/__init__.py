@@ -78,7 +78,7 @@ class glrm:
 
     
     
-    def produce(self, inputs): #calculate the output map; requires the input to be an numpy array
+    def produce(self, inputs): #calculate the output map; requires the input to be a numpy array
         
         inputs = inputs.reshape(1, -1)
         
