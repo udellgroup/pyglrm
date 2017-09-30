@@ -153,7 +153,7 @@ For example, the following code performs PCA with `n_components=2` (corresponds 
     losses = QuadLoss()
     rx = ZeroReg()
     ry = ZeroReg()
-    g = glrm(losses, rx, ry, n_components=2) #create a class for GLRM (Here it does PCA), in which n_components is the target number of dimensions
+    g = glrm(losses, rx, ry, n_components=2) #create a class for GLRM (Here it does PCA), in which n_components is the number of target dimensions
     g.set_training_data(inputs=A)
     g.fit()
     a_new = np.array([6, 7, 8, 9]) #initialize a new row to be tested
