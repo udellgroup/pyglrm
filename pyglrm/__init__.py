@@ -44,36 +44,43 @@ class glrm:
     is_feature_selection = False
     
     #class constructor: default being PCA
-    def __init__(self, losses = QuadLoss(), rx = ZeroReg(), ry = ZeroReg()):
+    def __init__(self, losses = QuadLoss(), rx = ZeroReg(), ry = ZeroReg(), n_components=2):
         
         self.losses = losses
         self.rx = rx
         self.ry = ry
+        self.k = n_components
+        self.fitted = False
         self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry}
 
 
-    #fit the dimensionality reduction method to the input and then output results
-    def fit_transform(self, A, k):
-            
-            glrm_j = j.GLRM(A, self.losses, self.rx, self.ry, k)
+
+#fit the dimensionality reduction method to the input and then output dimensionality-reduced results
+
+    def fit(self):
+            if self.fitted:
+                return
+    
+            if self.training_inputs is None:
+                raise ValueError("Missing training data.")
+
+            glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k)
             X, Y, ch = j.fit_b(glrm_j)
             self.Y = Y
-            self.k = k
-            
-            return X, Y, ch
+            self.fitted = True
+#            return np.dot(np.transpose(X), Y)
+
     
-    
-    #fit the dimensionality reduction method to the input, without outputting results
-    def fit(self, A, k):
-            glrm_j = j.GLRM(A, self.losses, self.rx, self.ry, k)
-            X, Y, ch = j.fit_b(glrm_j)
-            self.Y = Y
-            self.k = k
-    
-    
-    def predict(self, v): #calculate the output map; requires the input to be an numpy array
+    #store training matrix as attribute of the class
+    def set_training_data(self, inputs):
         
-        v = v.reshape(1, -1)
+            self.training_inputs = inputs
+
+    
+    
+    def produce(self, inputs): #calculate the output map; requires the input to be an numpy array
+        
+        inputs = inputs.reshape(1, -1)
         
         
         #make sure dimension_reduce has already been executed beforehand, and Y and v match in terms of numbers of columns
@@ -83,7 +90,7 @@ class glrm:
             raise Exception('Initial GLRM fitting not executed!')
         else:
             try:
-                if self.Y.shape[1] != v.shape[1]:
+                if self.Y.shape[1] != inputs.shape[1]:
                     raise ValueError
             except ValueError:
                 raise Exception('Dimension of input vector does not match Y!')
@@ -91,30 +98,32 @@ class glrm:
                 self.Y = self.Y.astype(float) #make sure column vectors finally have the datatype Array{float64,1} in Julia
                 num_cols = self.Y.shape[1]
                 ry = [j.FixedLatentFeaturesConstraint(self.Y[:, i]) for i in range(num_cols)]
-                glrm_new_j = j.GLRM(v, self.losses, self.rx, ry, self.k)
+                glrm_new_j = j.GLRM(inputs, self.losses, self.rx, ry, self.k)
                 x, yp, ch = j.fit_b(glrm_new_j)
                 return x
 
 
 class pca(glrm):
-    def check_success(): #may not needed; just to make sure this class is not empty so that it can be correctly defined
-        return 0
-
+    run_status = 0
 
 class nnmf(glrm):
-    def __init__(self, losses = QuadLoss(), rx = NonNegConstraint(), ry = NonNegConstraint()):
+    def __init__(self, losses = QuadLoss(), rx = NonNegConstraint(), ry = NonNegConstraint(), n_components=2):
         self.losses = losses
         self.rx = rx
         self.ry = ry
+        self.k = n_components
+        self.fitted = False
         self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry}
 
 
 class rpca(glrm):
-    def __init__(self, losses = HuberLoss(), rx = QuadReg(), ry = QuadReg()):
+    def __init__(self, losses = HuberLoss(), rx = QuadReg(), ry = QuadReg(), n_components=2):
         
         self.losses = losses
         self.rx = rx
         self.ry = ry
+        self.k = n_components
+        self.fitted = False
         self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry}
 
 
