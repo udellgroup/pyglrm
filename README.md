@@ -145,20 +145,19 @@ by having arguments like `QuadLoss(scale=1.0)` in class initializations.
 
 ## Example
 
-For example, the following code performs PCA with `k=2` on the `3`x`4` matrix `A`:
+For example, the following code performs PCA with `n_components=2` (corresponds to the target rank `k`) on the `3`x`4` matrix `A`:
 
     import numpy as np
     from pyglrm import *
     A = np.array([[1, 2, 3, 4], [2, 4, 6, 8], [4, 5, 6, 7]])
-    k = 2 #number of target dimensions
     losses = QuadLoss()
     rx = ZeroReg()
     ry = ZeroReg()
-    g = glrm(losses, rx, ry) #create a class for GLRM (Here it does PCA) 
-    X, Y, ch = g.fit_transform(A, k) 
-    A_pca = np.dot(np.transpose(X), Y) #result for PCA
-    a_new = np.array([6, 7, 8, 9]) #A new line to be tested
-    x = g.predict(a_new) #the latent representation of a_new
+    g = glrm(losses, rx, ry, n_components=2) #create a class for GLRM (Here it does PCA), in which n_components is the target number of dimensions
+    g.set_training_data(inputs=A)
+    g.fit()
+    a_new = np.array([6, 7, 8, 9]) #initialize a new row to be tested
+    x = g.produce(inputs=a_new) #get the latent representation of a_new
     
 
 which runs an alternating directions proximal gradient method on `g` to find the
