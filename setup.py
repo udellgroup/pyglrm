@@ -17,7 +17,7 @@ pyglrm_version = '0.1.0'
 
 
 
-address_pyjulia = 'git+https://github.com/JuliaPy/pyjulia'
+#address_pyjulia = 'git+https://github.com/JuliaPy/pyjulia'
 msg_configurejulia = 'Ensuring Julia has required packages installed...'
 msg_juliaerror = 'Failed to run Julia.  Please ensure that Julia is properly installed on this\nsystem and then rerun the installer.'
 msg_needjulia = 'Julia not found on this system.'
@@ -28,7 +28,7 @@ msg_postinstall = 'Setup has installed Julia.  The Julia directory can be found 
 
 
 def installjulia():
-  try:
+  try:  # Set error names by Python version.
     RunTimeError
   except NameError:
     RunTimeError = RuntimeError
@@ -37,19 +37,15 @@ def installjulia():
   
 
   if platform.startswith('linux'):
-    check_call([python_binary_path, 'setup-linux.py'])
-  #elif platform == 'darwin':
-  #  check_call('bash', 'setup-macos.sh', 
+    check_call([python_binary_path, 'setup-linux.py']) 
   else:
     raise RunTimeError(msg_install_failed)
   
-  #environ["PATH"] = ''.join([environ["PATH"], ':', environ["HOME"],
-  #       '/.julia/julia-903644385b/bin'])
   print(msg_postinstall)
 
 
 def configurejulia():
-  try:
+  try:  # Set error names by Python version.
     FileNotFoundError
   except NameError:
     FileNotFoundError = OSError
@@ -73,15 +69,11 @@ def configurejulia():
     return
   except FileNotFoundError:
     raise RunTimeError(msg_juliaerror)
-
-def configurepycall():
-  check_call([python_binary_path, '-m', 'pip', 'install', address_pyjulia])
     
 
 class CustomInstall(install):
   def run(self):
     configurejulia()
-    configurepycall()
     install.run(self)
     
 
@@ -93,7 +85,8 @@ setup(
   author_email='mdz32@cornell.edu',
   url='https://github.coecis.cornell.edu/mdz32/pyglrm',
   include_package_data=True,
-  install_requires=["numpy"],
+  install_requires=["julia", "numpy"],
+  setup_requires=["julia"],
   package_data={'' : ['README.md']},
   license='MIT',
   packages=['pyglrm'],
