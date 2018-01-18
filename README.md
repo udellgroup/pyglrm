@@ -36,7 +36,7 @@ Windows based installations are not supported yet.
 3.  Check that Julia runs on the command line by running the command ```julia``` on the command line.
 3.  Using your choice of ```pip```, ```pip2```, or ```pip3``` depending on the version of Python you intend on using, run the command
     ```
-    pip install git+https://gitlab.datadrivendiscovery.org/Cornell/pyglrm
+    pip install git+https://gitlab.datadrivendiscovery.org/Cornell/pyglrm --user
     ```
     
     The installation will get the package via git - you may need to enter you password for gitlab.
@@ -46,7 +46,7 @@ Windows based installations are not supported yet.
 3.  Note that the default distribution of Julia included in most package managers is not sufficiently up to date to run this package.  We instead using the version of Julia from the Julia website.  The installer for this package can install Julia for you.
 3.  Using your choice of ```pip```, ```pip2```, or ```pip3``` depending on the version of Python you intend on using, run the command
     ```
-    pip install git+https://gitlab.datadrivendiscovery.org/Cornell/pyglrm
+    pip install git+https://gitlab.datadrivendiscovery.org/Cornell/pyglrm --user
     ```
     
     The installation will get the package via git - you may need to enter you password for gitlab.
