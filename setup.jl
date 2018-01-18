@@ -22,5 +22,5 @@ run(`bash $shell_file`)
 # Finally, we build the packages now since PyCall needs to be built with
 # ENV["PYTHON"] set and LowRankModels takes so long that it may cause users to
 # think the system is not working upon first use.
-Pkg.build("LowRankModels")
+Pkg.build("LowRankModels") ; using LowRankModels
 Pkg.build("PyCall")
