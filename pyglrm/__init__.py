@@ -81,8 +81,8 @@ class glrm:
     
     def produce(self, inputs): #calculate the output map; requires the input to be a numpy array
         
-        inputs = inputs.reshape(1, -1)
-        
+#        inputs = inputs.reshape(1, -1)
+
         
         #make sure dimension_reduce has already been executed beforehand, and Y and v match in terms of numbers of columns
         try:
