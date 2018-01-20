@@ -66,6 +66,7 @@ class glrm:
 
             glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k)
             X, Y, ch = j.fit_b(glrm_j)
+            self.X = X
             self.Y = Y
             self.fitted = True
 #            return np.dot(np.transpose(X), Y)
