@@ -1,5 +1,6 @@
 import julia
 import numpy as np
+import pandas as pd
 
 j = julia.Julia()
 j.using("LowRankModels")
@@ -39,7 +40,6 @@ def NonNegConstraint():
 
 
 class glrm:
-    
     is_dimensionality_reduction = True
     is_feature_selection = False
     
@@ -50,39 +50,64 @@ class glrm:
         self.rx = rx
         self.ry = ry
         self.k = n_components
+        self.training_inputs = None
+        self.index = None
         self.fitted = False
         self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry}
 
-
-
 #fit the dimensionality reduction method to the input and then output dimensionality-reduced results
 
-    def fit(self):
-            if self.fitted:
-                return
-    
-            if self.training_inputs is None:
-                raise ValueError("Missing training data.")
+    def fit(self, inputs=None):
+        if self.fitted and inputs is None:
+            return
+        if inputs is None and self.training_inputs is None:
+            raise ValueError("Missing training data.")
+        elif inputs is not None:
+            if type(inputs) is np.ndarray:
+                self.training_inputs = inputs
+            elif type(inputs) is pd.core.frame.DataFrame:
+                self.training_inputs = inputs.values
+                self.index = list(inputs.index)
+            else:
+                raise TypeError("Input must be either numpy array or pandas DataFrame!")
 
-            glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k)
-            X, Y, ch = j.fit_b(glrm_j)
-            self.X = X
-            self.Y = Y
-            self.fitted = True
-#            return np.dot(np.transpose(X), Y)
+        glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k)
+        X, Y, ch = j.fit_b(glrm_j)
+        self.X = X
+        self.Y = Y
+        self.fitted = True
 
-    
+    def fit_transform(self, inputs=None):
+        if self.fitted and inputs is None:
+            return
+        if inputs is None and self.training_inputs is None:
+            raise ValueError("Missing training data.")
+        elif inputs is not None:
+            if type(inputs) is np.ndarray:
+                self.training_inputs = inputs
+            elif type(inputs) is pd.core.frame.DataFrame:
+                self.training_inputs = inputs.values
+                self.index = list(inputs.index)
+            else:
+                raise TypeError("Input must be either numpy array or pandas DataFrame!")
+                
+        glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k)
+        X, Y, ch = j.fit_b(glrm_j)
+        self.X = X
+        self.Y = Y
+        self.fitted = True
+        return np.dot(np.transpose(X), Y)
+
     #store training matrix as attribute of the class
     def set_training_data(self, inputs):
-        
             self.training_inputs = inputs
-
     
-    
-    def produce(self, inputs): #calculate the output map; requires the input to be a numpy array
+    def produce(self, inputs): #calculate the output map; requires the input to be a numpy array or a pandas DataFrame
         
-#        inputs = inputs.reshape(1, -1)
-
+        if type(inputs) is pd.core.frame.DataFrame:
+            inputs = inputs.values
+        if inputs.ndim == 1:
+            inputs = inputs.reshape(1, -1)
         
         #make sure dimension_reduce has already been executed beforehand, and Y and v match in terms of numbers of columns
         try:
