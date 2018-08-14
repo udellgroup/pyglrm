@@ -5,7 +5,7 @@ import pandas as pd
 j = julia.Julia()
 j.using("LowRankModels")
 
-__all__ = ['QuadLoss','L1Loss','HuberLoss','ZeroReg','NonNegOneReg','QuadReg','NonNegConstraint','glrm', 'pca', 'nnmf', 'rpca']
+__all__ = ['QuadLoss','L1Loss','HuberLoss','ZeroReg','NonNegOneReg','QuadReg','NonNegConstraint','glrm', 'pca', 'nnmf', 'rpca', 'observations']
 
 #Losses
 def QuadLoss(scale=1.0, domain=j.RealDomain()):
@@ -37,14 +37,13 @@ def QuadReg(scale=1):
 def NonNegConstraint():
     return j.NonNegConstraint()
 
-
-
+#the Python glrm class
 class glrm:
     is_dimensionality_reduction = True
     is_feature_selection = False
     
     #class constructor: default being PCA
-    def __init__(self, losses = QuadLoss(), rx = ZeroReg(), ry = ZeroReg(), n_components=2):
+    def __init__(self, losses = QuadLoss(), rx = ZeroReg(), ry = ZeroReg(), n_components=2, X=None, Y=None, offset=False, scale=False):
         
         self.losses = losses
         self.rx = rx
@@ -53,7 +52,14 @@ class glrm:
         self.training_inputs = None
         self.index = None
         self.fitted = False
+        self.offset = offset
+        self.scale = scale
         self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry}
+        if X is not None:
+            self.X = X
+        if Y is not None:
+            self.Y = Y
+    
 
 #fit the dimensionality reduction method to the input and then output dimensionality-reduced results
 
@@ -70,12 +76,15 @@ class glrm:
                 self.index = list(inputs.index)
             else:
                 raise TypeError("Input must be either numpy array or pandas DataFrame!")
-
-        glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k)
+        columns_missing = np.where(np.array(np.sum(np.invert(np.isnan(self.training_inputs)), axis=0))==0)[0]
+        self.training_inputs = np.delete(self.training_inputs, columns_missing, 1)
+        obs = _observations(self.training_inputs)
+        glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k, obs=obs, offset=self.offset, scale=self.scale)
         X, Y, ch = j.fit_b(glrm_j)
         self.X = X
         self.Y = Y
         self.fitted = True
+
 
     def fit_transform(self, inputs=None):
         if self.fitted and inputs is None:
@@ -84,14 +93,18 @@ class glrm:
             raise ValueError("Missing training data.")
         elif inputs is not None:
             if type(inputs) is np.ndarray:
+                DATAFRAME = False
                 self.training_inputs = inputs
             elif type(inputs) is pd.core.frame.DataFrame:
+                DATAFRAME = True
                 self.training_inputs = inputs.values
                 self.index = list(inputs.index)
             else:
                 raise TypeError("Input must be either numpy array or pandas DataFrame!")
-                
-        glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k)
+        columns_missing = np.where(np.array(np.sum(np.invert(np.isnan(self.training_inputs)), axis=0))==0)[0]
+        self.training_inputs = np.delete(self.training_inputs, columns_missing, 1)
+        obs = _observations(self.training_inputs)
+        glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k, obs=obs, offset=self.offset, scale=self.scale)
         X, Y, ch = j.fit_b(glrm_j)
         self.X = X
         self.Y = Y
@@ -124,7 +137,7 @@ class glrm:
                 self.Y = self.Y.astype(float) #make sure column vectors finally have the datatype Array{float64,1} in Julia
                 num_cols = self.Y.shape[1]
                 ry = [j.FixedLatentFeaturesConstraint(self.Y[:, i]) for i in range(num_cols)]
-                glrm_new_j = j.GLRM(inputs, self.losses, self.rx, ry, self.k)
+                glrm_new_j = j.GLRM(inputs, self.losses, self.rx, ry, self.k, offset=self.offset, scale=self.scale)
                 x, yp, ch = j.fit_b(glrm_new_j)
                 return x
 
@@ -153,6 +166,23 @@ class rpca(glrm):
         self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry}
 
 
+# get a list of tuples of observed entries
+def observations(inputs, missing_type=np.nan):
+    obs = []
+    for row in range(inputs.shape[0]):
+        for col in range(inputs.shape[1]):
+            if np.isnan(missing_type):
+                if not np.isnan(inputs)[row, col]:
+                    obs.append((row, col))
+            else:
+                if inputs[row, col] == missing_type:
+                    obs.append((row, col))
+    return obs
+
+#get a list of tuples of observed entries for Julia
+def _observations(inputs, missing_type=np.nan):
+    obs = observations(inputs, missing_type=missing_type)
+    return [(item[0] + 1, item[1] + 1) for item in obs]
 
 
 
