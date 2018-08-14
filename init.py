@@ -42,9 +42,7 @@ class glrm:
     is_dimensionality_reduction = True
     is_feature_selection = False
     
-    #class constructor: default being PCA
     def __init__(self, losses = QuadLoss(), rx = ZeroReg(), ry = ZeroReg(), n_components=2, X=None, Y=None, offset=False, scale=False):
-        
         self.losses = losses
         self.rx = rx
         self.ry = ry
@@ -61,9 +59,10 @@ class glrm:
             self.Y = Y
     
 
-#fit the dimensionality reduction method to the input and then output dimensionality-reduced results
-
     def fit(self, inputs=None):
+    '''
+        Just fitting; no generalized low rank matrix returned.
+    '''
         if self.fitted and inputs is None:
             return
         if inputs is None and self.training_inputs is None:
@@ -109,20 +108,20 @@ class glrm:
         self.X = X
         self.Y = Y
         self.fitted = True
-        return np.dot(np.transpose(X), Y)
+        if not DATAFRAME:
+            return np.dot(np.transpose(X), Y)
+        else:
+            return pd.DataFrame(np.dot(np.transpose(X), Y), index=self.index)
 
-    #store training matrix as attribute of the class
+
     def set_training_data(self, inputs):
             self.training_inputs = inputs
     
     def produce(self, inputs): #calculate the output map; requires the input to be a numpy array or a pandas DataFrame
-        
         if type(inputs) is pd.core.frame.DataFrame:
             inputs = inputs.values
         if inputs.ndim == 1:
             inputs = inputs.reshape(1, -1)
-        
-        #make sure dimension_reduce has already been executed beforehand, and Y and v match in terms of numbers of columns
         try:
             self.Y
         except NameError:
@@ -154,7 +153,6 @@ class nnmf(glrm):
         self.fitted = False
         self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry}
 
-
 class rpca(glrm):
     def __init__(self, losses = HuberLoss(), rx = QuadReg(), ry = QuadReg(), n_components=2):
         
@@ -164,7 +162,6 @@ class rpca(glrm):
         self.k = n_components
         self.fitted = False
         self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry}
-
 
 # get a list of tuples of observed entries
 def observations(inputs, missing_type=np.nan):
