@@ -81,7 +81,7 @@ setup(
   name='pyglrm',
   version=pyglrm_version,
   description='LowRankModels.py is a python package for modeling and fitting generalized low rank models (GLRMs).',
-  author='Matthew Zalesak, Anya Chopra & Madeline Udell',
+  author='Matthew Zalesak, Chengrun Yang, Anya Chopra & Madeleine Udell',
   author_email='mdz32@cornell.edu',
   url='https://github.coecis.cornell.edu/mdz32/pyglrm',
   include_package_data=True,

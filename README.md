@@ -57,7 +57,12 @@ Windows based installations are not supported yet.
 
 ## Common Troubleshooting
 
-3.  Segmentation faults
+1.  Segmentation faults
+
+    This sometimes corresponds to the error message
+    ```
+    SystemError: initialization of _heapq did not return an extension module.
+    ```
 
     The underlying software that runs the package compiles itself for one version of Python at a time.  For example, if you install the package using Python 2.7 and then use Python 3.6 you will get a segmentation fault.
     
@@ -74,16 +79,16 @@ Windows based installations are not supported yet.
     to find the absolute path to the version of Python you plan to use.  Then run the following commands in Julia
     
     ```
-    ENV["PYTHON"] = "/path/to/python/binary"
+    ENV["PYTHON"] = path_to_python_binary
     Pkg.build("PyCall")
     exit()
     ```
     
     This should resolve the issue.
 
-3.  On linux, after installation "Julia" cannot be found.
+2.  On linux, after installation "Julia" cannot be found.
 
-    You likely need to run the command
+    You may need to run the command
     ```
     export PATH=$PATH:$HOME/.julia/julia-903644385b/bin
     ```
@@ -117,13 +122,13 @@ Losses:
 * quadratic loss `QuadLoss`
 * hinge loss `HingeLoss`
 * logistic loss `LogisticLoss`
-* poisson loss `PoissonLoss`
+* poisson loss `PoissonLoss` (not yet implemented)
 * weighted hinge loss `WeightedHingeLoss`
 * l1 loss `L1Loss`
 * ordinal hinge loss `OrdinalHingeLoss`
 * periodic loss `PeriodicLoss`
 * multinomial categorical loss `MultinomialLoss`
-* multinomial ordinal (aka ordered logit) loss `OrderedMultinomialLoss`
+* multinomial ordinal (aka ordered logit) loss `MultinomialOrdinalLoss`
 
 Regularizers:
 
@@ -157,7 +162,7 @@ For example, the following code performs PCA with `n_components=2` (corresponds 
     g.set_training_data(inputs=A)
     g.fit()
     a_new = np.array([6, 7, 8, 9]) #initialize a new row to be tested
-    x = g.produce(inputs=a_new) #get the latent representation of a_new
+    x = g.transform(inputs=a_new) #get the latent representation of a_new
     
 
 which runs an alternating directions proximal gradient method on `g` to find the
