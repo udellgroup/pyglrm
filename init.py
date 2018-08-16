@@ -1,41 +1,95 @@
 import julia
 import numpy as np
 import pandas as pd
+from typing import Union
 
 j = julia.Julia()
 j.using("LowRankModels")
 
-__all__ = ['QuadLoss','L1Loss','HuberLoss','ZeroReg','NonNegOneReg','QuadReg','NonNegConstraint','glrm', 'pca', 'nnmf', 'rpca', 'observations']
+# TODO: update __all__
+__all__ = ['QuadLoss','L1Loss','HuberLoss', 'HingeLoss', 'WeightedHingeLoss', 'PeriodicLoss', 'MultinomialLoss', 'MultinomialOrdinalLoss', 'ZeroReg','NonNegOneReg','QuadReg', 'QuadConstraint', 'NonNegConstraint', 'OneReg', 'OneSparseConstraint', 'UnitOneSparseConstraint', 'SimplexConstraint', 'FixedLatentFeaturesConstraint', 'glrm', 'pca', 'nnmf', 'rpca', 'observations']
 
 #Losses
+# TODO: add PoissonLoss
 def QuadLoss(scale=1.0, domain=j.RealDomain()):
-    if not isinstance(scale, float):
+    if not isinstance(scale, Union[float, int].__args__):
         raise TypeError
     return j.QuadLoss(scale, domain)
 
 def L1Loss(scale=1.0, domain=j.RealDomain()):
-    if not isinstance(scale, float):
+    if not isinstance(scale, Union[float, int].__args__):
         raise TypeError
     return j.L1Loss(scale, domain)
 
 def HuberLoss(scale=1.0, domain=j.RealDomain(), crossover=1.0):
-    if not isinstance(scale, float) or not isinstance(crossover, float):
+    if not isinstance(scale, Union[float, int].__args__) or not isinstance(crossover, Union[float, int].__args__):
         raise TypeError
     return j.HuberLoss(scale, domain, crossover)
 
+def HingeLoss(min=1, max=10, scale=1.0):
+    if not isinstance(min, int) or not isinstance(max, int) or not isinstance(scale, Union[float, int].__args__):
+        raise TypeError
+    return j.OrdinalHingeLoss(min, max, scale, j.OrdinalDomain(min, max))
+
+def WeightedHingeLoss(scale=1.0, case_weight_ratio=1.0):
+    if not isinstance(scale, Union[float, int].__args__) or not isinstance(case_weight_ratio, Union[float, int].__args__):
+        raise TypeError
+    return j.WeightedHingeLoss(scale, j.BoolDomain(), case_weight_ratio)
+
+def PeriodicLoss(T, scale=1.0):
+    if not isinstance(scale, Union[float, int].__args__):
+        raise TypeError
+    return j.PeriodicLoss(T, scale)
+
+def MultinomialLoss(max, scale=1.0):
+    if not isinstance(scale, Union[float, int].__args__):
+        raise TypeError
+    return j.MultinomialLoss(max, scale)
+
+def MultinomialOrdinalLoss(max, scale=1.0):
+    if not isinstance(scale, Union[float, int].__args__):
+        raise TypeError
+    return j.MultinomialOrdinalLoss(max, scale)
 
 #Regularizers
 def ZeroReg():
     return j.ZeroReg()
 
 def NonNegOneReg(scale=1):
+    if not isinstance(scale, Union[float, int].__args__):
+        raise TypeError
     return j.NonNegOneReg(scale)
 
 def QuadReg(scale=1):
+    if not isinstance(scale, Union[float, int].__args__):
+        raise TypeError
     return j.QuadReg(scale)
+
+def QuadConstraint(max_2norm=1):
+    if not isinstance(max_2norm, Union[float, int].__args__):
+        raise TypeError
+    return j.QuadConstraint(max_2norm)
 
 def NonNegConstraint():
     return j.NonNegConstraint()
+
+def OneReg(scale=1):
+    if not isinstance(scale, Union[float, int].__args__):
+        raise TypeError
+    return j.OneReg(scale)
+
+def OneSparseConstraint():
+    return j.OneSparseConstraint()
+
+def UnitOneSparseConstraint():
+    return j.UnitOneSparseConstraint()
+
+def SimplexConstraint():
+    return j.SimplexConstraint()
+
+def FixedLatentFeaturesConstraint(Y):
+    return j.FixedLatentFeaturesConstraint(Y)
+
 
 class glrm:
     """
@@ -106,6 +160,7 @@ class glrm:
         columns_missing = np.where(np.array(np.sum(np.invert(np.isnan(self.training_inputs)), axis=0))==0)[0]
         self.training_inputs = np.delete(self.training_inputs, columns_missing, 1)
         obs = _observations(self.training_inputs)
+        # TODO: automatically choose default loss and regularizer types by column data types
         glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k, obs=obs, offset=self.offset, scale=self.scale)
         X, Y, ch = j.fit_b(glrm_j)
         self.X = X
