@@ -6,7 +6,6 @@ from typing import Union
 j = julia.Julia()
 j.using("LowRankModels")
 
-# TODO: update __all__
 __all__ = ['QuadLoss','L1Loss','HuberLoss', 'HingeLoss', 'WeightedHingeLoss', 'PeriodicLoss', 'MultinomialLoss', 'MultinomialOrdinalLoss', 'ZeroReg','NonNegOneReg','QuadReg', 'QuadConstraint', 'NonNegConstraint', 'OneReg', 'OneSparseConstraint', 'UnitOneSparseConstraint', 'SimplexConstraint', 'FixedLatentFeaturesConstraint', 'glrm', 'pca', 'nnmf', 'rpca', 'observations']
 
 #Losses
@@ -103,13 +102,14 @@ class glrm:
         ry:                                                 An individual or a list of regularizer on Y.
         X (numpy.ndarray, shape(n_components, n_samples)):  The dimensionality-reduced data points.
         Y (numpy.ndarray, shape(n_components, n_features)): (Generalized) principal components.
-        k (int):                                            The maximum rank of X and Y.
+        n_components (int):                                 The maximum rank of X and Y, namely, the number of components to keep.
         training_inputs (numpy.ndarray or DataFrame):       The matrix to be decomposed.
         index (list):                                       Indices of the input DataFrame (None when input is numpy.ndarray).
         fitted (bool):                                      Whether this glrm has been fitted at least once.
         offset (bool):                                      Whether to do offsetting before matrix decomposition.
         scale (bool):                                       Whether to do scaling before matrix decomposition.
-        hyperparameters (dict):                             A dictionary of losses, regularizers, offset and scale.
+        obs (list):                                         A list of indices of observed entries (for missing entry imputation).
+        hyperparams (dict):                                 A dictionary of losses, regularizers, observed entry indices, and whether to offset or scale.
         
     """
     is_dimensionality_reduction = True
@@ -119,13 +119,14 @@ class glrm:
         self.losses = losses
         self.rx = rx
         self.ry = ry
-        self.k = n_components
+        self.n_components = n_components
         self.training_inputs = None
         self.index = None
         self.fitted = False
         self.offset = offset
         self.scale = scale
-        self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry, 'offset':offset, 'scale':scale}
+        self.obs = None
+        self.hyperparams = {'losses': self.losses, 'rx': self.rx, 'ry': self.ry, 'n_components': self.n_components, 'obs': self.obs, 'offset': self.offset, 'scale': self.scale}
         
         # TODO: add the option of initializing with SVD
         if X is not None:
@@ -134,12 +135,13 @@ class glrm:
             self.Y = Y
     
 
-    def fit(self, inputs=None):
+    def fit(self, inputs=None, identify_obs=True):
         """
         Fit the GLRM model on current inputs (if the inputs argument is not None) or previous (if the inputs argument is None), WITHOUT returning the fitted matrix.
         
         Args:
         inputs (np.ndarray or DataFrame, shape (n_samples, n_features)): The matrix to be fitted.
+        identify_obs (bool):                                             Whether to automatically get indices of missing entries.
         """
         #no need to fit again if the GLRM has already been fitted and no new inputs are given
         if self.fitted and inputs is None:
@@ -159,9 +161,10 @@ class glrm:
         #eliminate the column with only missing entries
         columns_missing = np.where(np.array(np.sum(np.invert(np.isnan(self.training_inputs)), axis=0))==0)[0]
         self.training_inputs = np.delete(self.training_inputs, columns_missing, 1)
-        obs = _observations(self.training_inputs)
+        if identify_obs:
+            self.obs = observations(self.training_inputs)
         # TODO: automatically choose default loss and regularizer types by column data types
-        glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.k, obs=obs, offset=self.offset, scale=self.scale)
+        glrm_j = j.GLRM(self.training_inputs, self.losses, self.rx, self.ry, self.n_components, obs=_convert_observations(self.obs), offset=self.offset, scale=self.scale)
         X, Y, ch = j.fit_b(glrm_j)
         self.X = X
         self.Y = Y
@@ -182,6 +185,23 @@ class glrm:
             return self.X.T
         else:
             return pd.DataFrame(self.X.T, index=self.index)
+
+    def fit_impute(self, inputs=None, identify_obs=True):
+        """
+        In an unsupervised way, fit GLRM onto current input (if the inputs argument is not None) or previous one (if the inputs argument is None), AND return the dimensionality-reduced matrix with the same shape as the original matrix.
+        
+        Args:
+        inputs (np.ndarray or DataFrame, shape (n_samples, n_features)): The original matrix to fit GLRM onto.
+        identify_obs (bool):                                             Whether to automatically get indices of missing entries.
+        
+        Returns:
+        (np.ndarray or DataFrame), shape (n_samples, n_features)): The dimensionality-reduced matrix.
+        """
+        self.fit(inputs=inputs, identify_obs=identify_obs)
+        if not self.DATAFRAME:
+            return np.dot(self.X.T, self.Y)
+        else:
+            return pd.DataFrame(np.dot(self.X.T, self.Y), index=self.index)
 
 
     def set_training_data(self, inputs):
@@ -210,6 +230,41 @@ class glrm:
             self.Y = Y
         else:
             self.Y = Y.values
+
+    def get_params(self):
+        """
+        Returns the parameters of GLRM, i.e., the Y matrix representing generalized principal components.
+        
+        Returns:
+        Y (np.ndarray or DataFrame, shape (n_components, n_features)): The Y matrix to be used in GLRM.
+        """
+        return self.Y
+    
+    def set_hyperparams(self, losses=None, rx=None, ry=None, n_components=None, obs=None, offset=None, scale=None):
+        """
+        Set the hyperparameters of GLRM, i.e., a dictionary of losses, regularizers, observed entry indices, and whether to offset or scale.
+        
+        Args:
+        losses:                                             An individual or a list of loss type.
+        rx:                                                 An individual or a list of regularizer on X.
+        ry:                                                 An individual or a list of regularizer on Y.
+        n_components (int):                                 The maximum rank of X and Y, namely, the number of components to keep.
+        obs (list):                                         A list of indices of observed entries (for missing entry imputation).
+        offset (bool):                                      Whether to do offsetting before matrix decomposition.
+        scale (bool):                                       Whether to do scaling before matrix decomposition.
+        """
+        for key in list(self.hyperparams.keys()):
+            if eval(key) is not None:
+                setattr(self, key, eval(key))
+    
+    def get_hyperprams(self):
+        """
+        Get the hyperparameters of GLRM, i.e., a dictionary of losses, regularizers, observed entry indices, and whether to offset or scale.
+        
+        Returns:
+        hyperparams (dict): A dictionary of losses, regularizers, observed entry indices, and whether to offset or scale.
+        """
+        return {key: getattr(self, key) for key in self.hyperparams.keys()}
     
     def transform(self, inputs):
         """
@@ -240,7 +295,7 @@ class glrm:
                 self.Y = self.Y.astype(float) #make sure column vectors finally have the datatype Array{float64,1} in Julia
                 num_cols = self.Y.shape[1]
                 ry = [j.FixedLatentFeaturesConstraint(self.Y[:, i]) for i in range(num_cols)]
-                glrm_new_j = j.GLRM(inputs, self.losses, self.rx, ry, self.k, offset=self.offset, scale=self.scale)
+                glrm_new_j = j.GLRM(inputs, self.losses, self.rx, ry, self.n_components, offset=self.offset, scale=self.scale)
                 x, yp, ch = j.fit_b(glrm_new_j)
                 return x
 
@@ -249,32 +304,28 @@ class pca(glrm):
     """
         The class for principal component analysis (PCA).
     """
-    run_status = 0
+    pass
 
 class nnmf(glrm):
     """
         The class for nonnegative matrix factorization (NNMF).
     """
-    def __init__(self, losses = QuadLoss(), rx = NonNegConstraint(), ry = NonNegConstraint(), n_components=2):
-        self.losses = losses
-        self.rx = rx
-        self.ry = ry
-        self.k = n_components
-        self.fitted = False
-        self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry, 'offset':offset, 'scale':scale}
+    def __init__(self, n_components=2, X=None, Y=None, offset=False, scale=False):
+        super().__init__(n_components=n_components, X=X, Y=Y, offset=offset, scale=scale)
+        self.losses = QuadLoss()
+        self.rx = NonNegConstraint()
+        self.ry = NonNegConstraint()
+
 
 class rpca(glrm):
     """
         The class for robust PCA.
     """
-    def __init__(self, losses = HuberLoss(), rx = QuadReg(), ry = QuadReg(), n_components=2):
-        
-        self.losses = losses
-        self.rx = rx
-        self.ry = ry
-        self.k = n_components
-        self.fitted = False
-        self.hyperparameters = {'losses':losses, 'rx':rx, 'ry':ry, 'offset':offset, 'scale':scale}
+    def __init__(self, n_components=2, X=None, Y=None, offset=False, scale=False):
+        super().__init__(n_components=n_components, X=X, Y=Y, offset=offset, scale=scale)
+        self.losses = HuberLoss()
+        self.rx = QuadReg()
+        self.ry = QuadReg()
 
 
 def observations(inputs, missing_type=np.nan):
@@ -298,7 +349,7 @@ def observations(inputs, missing_type=np.nan):
                     obs.append((row, col))
     return obs
 
-#get a list of tuples of observed entries for Julia
+# below are private functions
 def _observations(inputs, missing_type=np.nan):
     """
         For internal use only; get the positions of observed entries in the input matrix and pass into Julia.
@@ -311,6 +362,21 @@ def _observations(inputs, missing_type=np.nan):
     """
     obs = observations(inputs, missing_type=missing_type)
     return [(item[0] + 1, item[1] + 1) for item in obs]
+
+def _convert_observations(obs, python_to_julia=True):
+    """
+    For internal use only; convert the list of Python indices to Julia, or reversely.
+    
+    Args:
+    obs (list): A list of observed indices.
+    
+    Returns:
+    obs (list): A list of observed indices in another language.
+    """
+    if python_to_julia:
+        return [(item[0] + 1, item[1] + 1) for item in obs]
+    else:
+        return [(item[0] - 1, item[1] - 1) for item in obs]
 
 
 
