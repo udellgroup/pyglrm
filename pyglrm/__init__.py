@@ -345,7 +345,7 @@ def observations(inputs, missing_type=np.nan):
                 if not np.isnan(inputs)[row, col]:
                     obs.append((row, col))
             else:
-                if inputs[row, col] == missing_type:
+                if inputs[row, col] != missing_type:
                     obs.append((row, col))
     return obs
 
