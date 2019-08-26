@@ -43,7 +43,7 @@ Windows based installations are not supported yet.
 
 ### Linux
 
-3.  Note that the default distribution of Julia included in most package managers is not sufficiently up to date to run this package.  We instead using the version of Julia from the Julia website.  The installer for this package can install Julia for you.
+3.  Note that the default distribution of Julia included in most package managers is not sufficiently up to date to run this package.  We instead recommend using the version of Julia from the Julia website.  The installer for this package can install Julia for you.
 3.  Using your choice of ```pip```, ```pip2```, or ```pip3``` depending on the version of Python you intend on using, run the command
     ```
     pip install git+https://github.com/udellgroup/pyglrm --user
